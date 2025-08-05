@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HackoSquad - Network Topology Lab</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0e0e0e;
+      color: #fff;
+      overflow: hidden;
+    }
+    h1 {
+      text-align: center;
+      padding: 1rem;
+    }
+    #lab {
+      position: relative;
+      width: 100vw;
+      height: 90vh;
+      border: 2px solid #444;
+      background: #1a1a1a;
+    }
+    .device {
+      width: 100px;
+      height: 100px;
+      background: #333;
+      border: 2px solid #09f;
+      border-radius: 12px;
+      text-align: center;
+      line-height: 100px;
+      position: absolute;
+      cursor: move;
+      user-select: none;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+    #testBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 10px 20px;
+      background: #09f;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: none;
+    }
+    #flag {
+      display: none;
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f0;
+      color: #000;
+      padding: 10px 20px;
+      font-weight: bold;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>HackoSquad - Network Topology Builder</h1>
+  <div id="lab">
+    <canvas id="lines"></canvas>
+    <div class="device" id="router" style="top: 200px; left: 400px;">Router</div>
+    <div class="device" id="pc1" style="top: 50px; left: 100px;">PC1</div>
+    <div class="device" id="pc2" style="top: 350px; left: 100px;">PC2</div>
+    <div class="device" id="tv" style="top: 100px; left: 700px;">TV</div>
+    <div class="device" id="printer" style="top: 350px; left: 700px;">Printer</div>
+    <button id="testBtn">Test Network</button>
+    <div id="flag">HKQ{TOPOLOGY_SIMULATED_SUCCESSFULLY}</div>
+  </div>
+
+  <script>
+    const devices = document.querySelectorAll('.device');
+    const connections = [];
+    const lab = document.getElementById('lab');
+    const canvas = document.getElementById('lines');
+    const ctx = canvas.getContext('2d');
+    const testBtn = document.getElementById('testBtn');
+    const flag = document.getElementById('flag');
+
+    canvas.width = lab.clientWidth;
+    canvas.height = lab.clientHeight;
+
+    let selected = null, offsetX, offsetY;
+
+    devices.forEach(dev => {
+      dev.addEventListener('mousedown', e => {
+        selected = dev;
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+        dev.style.zIndex = 10;
+      });
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (selected) {
+        devices.forEach(dev => {
+          if (dev !== selected && !connections.some(c => (c[0] === selected && c[1] === dev) || (c[0] === dev && c[1] === selected))) {
+            const dx = selected.offsetLeft - dev.offsetLeft;
+            const dy = selected.offsetTop - dev.offsetTop;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 150) {
+              connections.push([selected, dev]);
+              if (connections.length >= 4) {
+                testBtn.style.display = 'block';
+              }
+              drawLines();
+            }
+          }
+        });
+        selected = null;
+      }
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (selected) {
+        selected.style.left = (e.pageX - offsetX) + 'px';
+        selected.style.top = (e.pageY - offsetY - lab.offsetTop) + 'px';
+        drawLines();
+      }
+    });
+
+    function drawLines() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      connections.forEach(([a, b]) => {
+        ctx.beginPath();
+        ctx.strokeStyle = '#0ff';
+        ctx.lineWidth = 3;
+        ctx.moveTo(a.offsetLeft + 50, a.offsetTop + 50);
+        ctx.lineTo(b.offsetLeft + 50, b.offsetTop + 50);
+        ctx.stroke();
+      });
+    }
+
+    testBtn.addEventListener('click', () => {
+      alert("Message sent from PC1 to TV! Network operational.");
+      flag.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
