@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HackoSquad Network Builder Lab</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1e1e2f;
+      margin: 0;
+      padding: 0;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 20px;
+      color: #00ffe7;
+    }
+
+    #network-area {
+      border: 2px dashed #555;
+      width: 90%;
+      height: 500px;
+      margin: 20px;
+      position: relative;
+      background: #2b2b3c;
+      border-radius: 10px;
+    }
+
+    .device {
+      width: 100px;
+      height: 100px;
+      background: #3a3a5e;
+      border: 2px solid #00ffe7;
+      border-radius: 12px;
+      text-align: center;
+      line-height: 100px;
+      position: absolute;
+      cursor: grab;
+      user-select: none;
+    }
+
+    #router {
+      background: #ff0055;
+      border: 2px solid #fff200;
+    }
+
+    #device-pool {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .pool-device {
+      width: 90px;
+      height: 90px;
+      background: #444466;
+      border: 1px solid #888;
+      border-radius: 10px;
+      text-align: center;
+      line-height: 90px;
+      margin-top: 10px;
+      cursor: grab;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #00ffe7;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 20px;
+    }
+
+    #flag {
+      display: none;
+      background: #00ff88;
+      color: #000;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>HackoSquad: Build Your First Network</h1>
+  <p>Drag ALL devices from the pool to the network area to connect them to the router!</p>
+  <p><em>Tip: Each device will automatically connect to the router when placed in the network area.</em></p>
+
+  <div id="device-pool">
+    <div class="pool-device" draggable="true" data-name="Laptop">💻 Laptop</div>
+    <div class="pool-device" draggable="true" data-name="Phone">📱 Phone</div>
+    <div class="pool-device" draggable="true" data-name="TV">📺 TV</div>
+    <div class="pool-device" draggable="true" data-name="Printer">🖨️ Printer</div>
+    <div class="pool-device" draggable="true" data-name="Tablet">📟 Tablet</div>
+    <div class="pool-device" draggable="true" data-name="Smart Speaker">🔊 Speaker</div>
+  </div>
+
+  <div id="network-area">
+    <canvas id="connectionCanvas" width="1000" height="500"></canvas>
+    <div class="device" id="router" style="top: 200px; left: 450px;">🌐 Router</div>
+  </div>
+
+  <button id="checkBtn" disabled>Check Network & Reveal Flag</button>
+  <div id="flag">🎉 Flag: <strong id="flag-content"></strong></div>
+
+  <script>
+    const poolDevices = document.querySelectorAll('.pool-device');
+    const networkArea = document.getElementById('network-area');
+    const router = document.getElementById('router');
+    const checkBtn = document.getElementById('checkBtn');
+    const flag = document.getElementById('flag');
+    const canvas = document.getElementById('connectionCanvas');
+    const ctx = canvas.getContext('2d');
+    let connectedDevices = [];
+    
+    const parts = ['SEtR', 'e1Np', 'bXBs', 'ZV9O', 'ZXR3', 'b3Jr', 'X0J1', 'aWx0', 'X1N1', 'Y2Nl', 'c3Nm', 'dWxs', 'eX0='];
+    const key = 42;
+    
+    function reconstructFlag() {
+      const combined = parts.join('');
+      const decoded = atob(combined);
+      return decoded;
+    }
+
+    poolDevices.forEach(device => {
+      device.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', e.target.getAttribute('data-name'));
+      });
+    });
+
+    networkArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    networkArea.addEventListener('drop', (e) => {
+      const name = e.dataTransfer.getData('text/plain');
+      const original = document.querySelector(`[data-name="${name}"]`);
+      if (!original) return;
+
+      const newDevice = document.createElement('div');
+      newDevice.classList.add('device');
+      newDevice.innerText = original.innerText;
+      newDevice.style.top = `${e.offsetY - 50}px`;
+      newDevice.style.left = `${e.offsetX - 50}px`;
+      networkArea.appendChild(newDevice);
+
+      connectedDevices.push(name);
+      original.remove();
+
+      drawLine(newDevice, router);
+
+      if (connectedDevices.includes("Laptop") && connectedDevices.includes("Phone") && 
+          connectedDevices.includes("TV") && connectedDevices.includes("Printer") && 
+          connectedDevices.includes("Tablet") && connectedDevices.includes("Smart Speaker")) {
+        checkBtn.disabled = false;
+      }
+    });
+
+    checkBtn.addEventListener('click', () => {
+      const finalFlag = reconstructFlag();
+      document.getElementById('flag-content').textContent = finalFlag;
+      flag.style.display = 'block';
+    });
+
+    function drawLine(fromEl, toEl) {
+      const fromRect = fromEl.getBoundingClientRect();
+      const toRect = toEl.getBoundingClientRect();
+      const netRect = networkArea.getBoundingClientRect();
+
+      const fromX = fromRect.left + fromRect.width / 2 - netRect.left;
+      const fromY = fromRect.top + fromRect.height / 2 - netRect.top;
+      const toX = toRect.left + toRect.width / 2 - netRect.left;
+      const toY = toRect.top + toRect.height / 2 - netRect.top;
+
+      ctx.strokeStyle = '#00ffe7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+    }
+  </script>
+</body>
+</html>
